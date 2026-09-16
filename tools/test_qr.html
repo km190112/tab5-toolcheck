@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ToolCheck テスト用 QR</title>
+<style>
+  :root { --ink:#111; --sub:#555; --line:#ccc; --bg:#fff; --ok:#1b5e20; --ng:#b71c1c; }
+  body { margin:0; padding:16px; font-family:"Yu Gothic UI","Meiryo",system-ui,sans-serif; color:var(--ink); background:var(--bg); }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p.note { margin:0 0 16px; color:var(--sub); font-size:13px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:12px; }
+  .card { border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; break-inside:avoid; }
+  .code { display:flex; justify-content:center; align-items:center; min-height:200px; }
+  .code svg { max-width:100%; height:auto; }
+  .label { font-family:Consolas,"BIZ UDGothic",monospace; font-size:16px; word-break:break-all; margin-top:6px; }
+  .expect { font-size:13px; margin-top:4px; }
+  .expect.ok { color:var(--ok); }
+  .expect.ng { color:var(--ng); }
+  @media print { body { padding:0; } .card { border-color:#999; } }
+</style>
+</head>
+<body>
+<h1>ToolCheck テスト用 QR</h1>
+<p class="note">画面に表示したまま、または印刷して QR ユニットにかざしてください。下の「期待」は本体ファームでの判定です。
+1 次元バーコード (JAN など) は扱わないので載せていません。</p>
+<div class="grid" id="grid"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"
+        integrity="sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1" crossorigin="anonymous"></script>
+<script>
+  // expect: 本体ファームでの判定
+  const items = [
+    { text: "1234567",          expect: "利用者 ID",              ok: true },
+    { text: "7654321",          expect: "利用者 ID",              ok: true },
+    // 設定「利用者 ID に英字・記号も使う」を入れ、文字数 7 にすると利用者 ID になる (既定の数字だけでは物品番号)
+    { text: "TANAKA_",          expect: "物品番号 (英字・記号も使う設定なら利用者 ID)", ok: true },
+    { text: "sato-k_",          expect: "物品番号 (英字・記号も使う設定なら利用者 ID)", ok: true },
+    { text: "TW-025",           expect: "物品番号",               ok: true },
+    { text: "AB",               expect: "物品番号 (最短 2 文字)",  ok: true },
+    { text: "ABCDEFGHIJKLMNO",  expect: "物品番号 (最長 15 文字)", ok: true },
+    { text: "ABCDEFGHIJKLMNOP", expect: "長すぎる (16 文字)",      ok: false },
+    { text: "12345678",         expect: "物品番号 (8 桁の数字)",   ok: true },
+    { text: "123456",           expect: "物品番号 (6 桁の数字)",   ok: true },
+    { text: "4901234567894",    expect: "物品番号 (13 桁の数字)",  ok: true },
+    { text: "MM-100/A_1#",      expect: "物品番号 (記号入り)",     ok: true },
+    { text: "tw-025",           expect: "物品番号 (小文字は別物)", ok: true },
+    { text: "T,01",             expect: "不正 (カンマ)",           ok: false },
+    { text: "A B",              expect: "不正 (空白)",             ok: false },
+    { text: "X",                expect: "不正 (1 文字)",           ok: false },
+  ];
+
+  const grid = document.getElementById("grid");
+  for (const it of items) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const box = document.createElement("div");
+    box.className = "code";
+    const qr = qrcode(0, "M");
+    qr.addData(it.text);
+    qr.make();
+    box.innerHTML = qr.createSvgTag({ cellSize: 6, margin: 4, scalable: true });
+    const svg = box.querySelector("svg");
+    if (svg) { svg.setAttribute("width", "200"); svg.setAttribute("height", "200"); }
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = it.text;
+    const expect = document.createElement("div");
+    expect.className = "expect " + (it.ok ? "ok" : "ng");
+    expect.textContent = "期待: " + it.expect;
+    card.append(box, label, expect);
+    grid.appendChild(card);
+  }
+</script>
+</body>
+</html>

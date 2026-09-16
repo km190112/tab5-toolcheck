@@ -1,0 +1,29 @@
+# ファームと文書は LF で揃える。Arduino のビルドやツールは LF で書き出すので、
+# core.autocrlf=true の Windows で明示しないと作業コピーだけ CRLF になり全行差分になる。
+*.ino  text eol=lf
+*.h    text eol=lf
+*.hpp  text eol=lf
+*.c    text eol=lf
+*.cpp  text eol=lf
+*.csv  text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+LICENSE text eol=lf
+*.html text eol=lf
+*.json text eol=lf
+*.yml  text eol=lf
+*.sh   text eol=lf
+.gitattributes text eol=lf
+.gitignore     text eol=lf
+
+# Windows PowerShell 5.1 は BOM 無し UTF-8 を CP932 として読むため、
+# .ps1 は BOM 付き UTF-8 + CRLF で保存する。
+*.ps1 text eol=crlf
+
+# cmd.exe は LF だと goto / ラベルを誤解釈する。中身は ASCII のみ。
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.bin binary
