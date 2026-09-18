@@ -29,59 +29,14 @@ Tab5 Port A ── Unit PaHub v2.1 ─┬─ Unit QRCode … 画面の横
 
 ## ビルドと書き込み
 
-Windows + PowerShell を前提にしています (`tools/serial.ps1` も Windows 専用)。GUI の Arduino IDE を使う場合も、下記と同じ版数のボードパッケージ・ライブラリを入れれば手順は読み替えられます。
-
-### 1. 開発環境の準備 (最初の 1 回だけ)
-
-1. [Arduino CLI](https://arduino.github.io/arduino-cli/latest/installation/) を入れる。公式サイトの Windows 版 zip を展開し、`arduino-cli.exe` にパスを通す
-2. ESP32 のボードパッケージを追加する。**版数を必ず指定する** (最新版だと ESP32-P4 の挙動や `ChipVariant` の値が変わることがある)
-
-   ```powershell
-   arduino-cli config init
-   arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
-   arduino-cli core update-index
-   arduino-cli core install esp32:esp32@3.3.11
-   ```
-
-3. ライブラリを入れる (版数を指定)。本体ファームは M5UnitQRCode を使わない。理由は [spikes/README.md](spikes/README.md)
-
-   ```powershell
-   arduino-cli lib install "M5Unified@0.2.21" "M5GFX@0.2.28" "VL53L1X@1.3.1"
-   ```
-
-   `VL53L1X` は Pololu 製 (ToF センサ用)。同名の別ライブラリと出た場合は作者が Pololu のものを選ぶ
-
-### 2. リポジトリを取得する
-
-GitHub の緑の **Code** ボタン → **Download ZIP** で展開するか、
-
-```powershell
-git clone https://github.com/km190112/tab5-toolcheck.git
-cd tab5-toolcheck
-```
-
-### 3. Tab5 を PC に繋ぎ、ポート番号を確認する
-
-USB-C ケーブル (充電専用ではなくデータ通信対応のもの) で PC に繋ぎ、Windows の「デバイスマネージャー」→「ポート (COM と LPT)」を開いて増えた番号 (`COM3` など) を控える。`arduino-cli board list` でも確認できる。
-
-### 4. コンパイルして書き込む
-
-リポジトリのルートで実行する。`-p COM3` は手順 3 で控えた番号に置き換える。
+- Arduino esp32 コア **3.3.11**。FQBN `esp32:esp32:m5stack_tab5:ChipVariant=prev3` (ESP32-P4 rev < 3 の場合。rev 3 以降は `ChipVariant` を合わせる)
+- ライブラリ: M5Unified 0.2.21 / M5GFX 0.2.28 / Pololu VL53L1X 1.3.1 (本体ファームは M5UnitQRCode を使わない。理由は [spikes/README.md](spikes/README.md))
+- `firmware/ToolCheck/partitions.csv` (記録用の NVS 領域 `tooldb` 1MB) はスケッチ直下にあるのでビルドで自動的に使われる。**一度書き込んだら変えない** (領域が動くと記録が消える)
 
 ```powershell
 arduino-cli compile --fqbn esp32:esp32:m5stack_tab5:ChipVariant=prev3 firmware/ToolCheck
 arduino-cli upload  --fqbn esp32:esp32:m5stack_tab5:ChipVariant=prev3 -p COM3 firmware/ToolCheck
 ```
-
-- `ChipVariant=prev3` は ESP32-P4 の rev が 3.00 未満の個体向け (現状出回っている個体はほぼこちら)。rev 3.00 以降の個体だけ `ChipVariant=postv3` に変える
-- `firmware/ToolCheck/partitions.csv` (記録用の NVS 領域 `tooldb` 1MB) はスケッチ直下にあるのでビルドで自動的に使われる。**一度書き込んだら変えない** (領域が動くと記録が消える)
-- 書き込みには 15 秒ほどかかる
-
-### うまく書き込めないとき
-
-- **ポートが出てこない** → ケーブルがデータ通信対応か確認し、別の USB ポート / ケーブルでも試す
-- **`upload` が失敗する / 途中で切れる** → `tools/serial.ps1` やシリアルモニタなど同じ COM ポートを使う他のツールを閉じてから再実行する。ケーブルを挿し直して直後にもう一度実行するだけで通ることもある
-- **書き込み後、画面が真っ黒 / 文字化けする、起動しない** → `ChipVariant` が個体の rev と合っていない可能性。`prev3` ⇔ `postv3` を入れ替えて焼き直す
 
 ### シリアルの開き方
 
