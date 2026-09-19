@@ -42,9 +42,19 @@ git clone https://github.com/km190112/tab5-toolcheck.git
 cd tab5-toolcheck
 ```
 
+ZIP をダウンロードして展開した場合、Windows がファイルに「インターネットからダウンロードした」印を付けるため、
+このままだと `tools/*.ps1` が「デジタル署名されていません」と言われて実行できない。展開したフォルダのルートで
+次を 1 回だけ実行して、印を外し PowerShell がこのフォルダのスクリプトを実行できるようにしておく
+(`git clone` で取得した場合は基本不要だが、実行しても害はない)。
+
+```powershell
+Get-ChildItem -Recurse -Filter *.ps1 | Unblock-File
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned -Force
+```
+
 ### 2. 開発環境の準備 (最初の 1 回だけ)
 
-1. [Arduino CLI](https://arduino.github.io/arduino-cli/latest/installation/) を入れる。公式サイトの Windows 版 zip を展開し、`arduino-cli.exe` にパスを通す
+1. [Arduino CLI](https://arduino.github.io/arduino-cli/latest/installation/) を入れる。公式サイトの Windows 版 zip を展開し、`arduino-cli.exe` にパスを通す。確認: 新しい PowerShell を開いて `arduino-cli version` を実行し、バージョンが表示されれば OK
 2. リポジトリのルートで `tools/setup_env.ps1` を実行する。ESP32 のボードパッケージ (esp32 コア **3.3.11**。版数を必ず指定する。最新版だと ESP32-P4 の挙動や `ChipVariant` の値、カメラ用の `ESP_Video` (後述) が変わることがある) と、ライブラリ (M5Unified 0.2.21 / M5GFX 0.2.28 / Pololu VL53L1X 1.3.1。本体ファームは M5UnitQRCode を使わない。理由は [spikes/README.md](spikes/README.md)) をまとめて指定版で入れる
 
    ```powershell
@@ -84,6 +94,7 @@ arduino-cli upload  --fqbn esp32:esp32:m5stack_tab5:ChipVariant=prev3 -p COM3 fi
 
 ### うまく書き込めないとき
 
+- **`.ps1` を実行すると `...デジタル署名されていません...` と言われて止まる** → 「1. リポジトリを取得する」の `Unblock-File` / `Set-ExecutionPolicy` をまだ実行していない。実行してからもう一度試す。すぐに 1 回だけ試したいときは `pwsh -NoProfile -ExecutionPolicy Bypass -File tools/setup_env.ps1` のように `-ExecutionPolicy Bypass` を付けて実行してもよい (その回限りで、PC 側の設定は変えない)
 - **`arduino-cli` コマンドが見つからないと言われる** → 手順 2 でパスを通したか確認する。新しく開いた PowerShell ウィンドウで試す (パスの反映には再起動が要ることがある)
 - **`ESP_Video.h: No such file or directory` (カメラ部分) でコンパイルが失敗する** → `ESP_Video` は Library Manager の対象ではなく、esp32 コア (ボードパッケージ) 3.3.11 に同梱されているカメラ実装。**コアのバージョンが 3.3.11 とずれている**ことが原因なので、`tools/setup_env.ps1` を実行し直す。Arduino IDE を使っている場合は実行後に IDE を再起動する。ボードマネージャ (「ツール」→「ボード」→「ボードマネージャ」) を開き、esp32 のインストール済みバージョンが 1 つだけ・3.3.11 になっているか確認する (別バージョンが残っていたら削除してから入れ直す)
 - **ポートが出てこない / `board list` に Tab5 が出ない** → ケーブルがデータ通信対応か確認し、別の USB ポート・ケーブルでも試す。Tab5 の電源が入っているか (画面が真っ黒でも背面の電源スイッチが ON か) も確認する
