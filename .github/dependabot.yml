@@ -1,0 +1,8 @@
+# ci.yml のアクションは SHA で固定している。固定したまま放置すると、
+# 脆弱性が直った版に上がらないまま古い SHA に貼り付くので、月 1 で更新を見る。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

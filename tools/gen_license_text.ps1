@@ -9,7 +9,7 @@
   (MSVC の 1 リテラルの上限 約 16KB と、連結後の上限 65,535 バイトの内に収まる)。
 
 .EXAMPLE
-  pwsh -NoProfile -File tools/gen_license_text.ps1
+  powershell -NoProfile -ExecutionPolicy Bypass -File tools\gen_license_text.ps1
 #>
 [CmdletBinding()]
 param()
