@@ -8,8 +8,8 @@
   警告はエラー扱い (/W4 /WX)。ESP32 側の gcc でも通すので、MSVC 固有の書き方に寄せない。
 
 .EXAMPLE
-  pwsh -NoProfile -File tests/run.ps1
-  pwsh -NoProfile -File tests/run.ps1 -Filter classifier
+  powershell -NoProfile -ExecutionPolicy Bypass -File tests\run.ps1
+  powershell -NoProfile -ExecutionPolicy Bypass -File tests\run.ps1 -Filter classifier
 #>
 [CmdletBinding()]
 param(

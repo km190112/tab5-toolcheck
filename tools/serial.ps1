@@ -11,14 +11,17 @@
   -Send は '|' 区切りで複数のコマンドを送る (コマンド自体にカンマを含められるように)。
   -Screenshot は "screenshot" を送り、#BEGIN png ～ #END png の base64 を PNG に保存する。
 
+.PARAMETER Port
+  Tab5 の COM ポート。省略すると自動で選ぶ (候補が複数あるときは止まる)。
+
 .EXAMPLE
-  pwsh -NoProfile -File tools/serial.ps1 -Seconds 5
-  pwsh -NoProfile -File tools/serial.ps1 -Send 'info|scan' -Seconds 3
-  pwsh -NoProfile -File tools/serial.ps1 -Screenshot tools/out/screen.png
+  powershell -NoProfile -ExecutionPolicy Bypass -File tools\serial.ps1 -Port COM4 -Seconds 5
+  powershell -NoProfile -ExecutionPolicy Bypass -File tools\serial.ps1 -Port COM4 -Send 'info|i2c' -Seconds 3
+  powershell -NoProfile -ExecutionPolicy Bypass -File tools\serial.ps1 -Port COM4 -Screenshot tools\out\screen.png
 #>
 [CmdletBinding()]
 param(
-    [string]$Port = 'COM3',
+    [string]$Port = '',
     [int]$Baud = 115200,
     [double]$Seconds = 5,
     [string]$Send = '',
@@ -29,6 +32,16 @@ param(
 
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
+
+. "$PSScriptRoot\common.ps1"
+
+try {
+    $Port = Resolve-SerialPort -Requested $Port
+}
+catch {
+    Write-Error $_.Exception.Message
+    exit 1
+}
 
 function Open-SerialPort {
     $sp = [System.IO.Ports.SerialPort]::new($Port, $Baud, [System.IO.Ports.Parity]::None, 8, [System.IO.Ports.StopBits]::One)

@@ -1,6 +1,6 @@
 # core ロジックの TDD 記録
 
-仕様の元: `docs/設計.md`。テストは `tests/`、実行は `pwsh -NoProfile -File tests/run.ps1` (MSVC, `/W4 /WX`)。
+仕様の元: `docs/設計.md`。テストは `tests/`、実行は `powershell -NoProfile -ExecutionPolicy Bypass -File tests\run.ps1` (MSVC, `/W4 /WX`)。
 各モジュールで「失敗するテストを先に入れて RED を確かめてコミット → 実装して GREEN を確かめてコミット」を守る。
 
 ## 利用者の流れ (設計から)

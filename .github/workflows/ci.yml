@@ -1,0 +1,72 @@
+# README に書いてある手順そのものを回す CI。
+#
+# 目的は「コードがコンパイルできる」ことの確認ではなく、
+# **第三者がクリーンな Windows で README どおりにやって躓かない**ことの確認。
+# そのため tools/setup_env.ps1 → tools/flash.ps1 を README と同じコマンドで呼ぶ。
+# 手順書とスクリプトが乖離したら、ここが落ちる。
+#
+# Windows PowerShell 5.1 (powershell) で呼ぶ。PowerShell 7 が無い PC でも
+# 動くことを保証したいので、pwsh は使わない。
+#
+# CI にできるのはコンパイルが通るところまで。実機の書き込みと起動確認は手元でやる
+# (tools/flash.ps1 が最後に info を読んで確かめる)。
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# 明示しないとリポジトリ既定の権限 (書き込み込みのことが多い) で GITHUB_TOKEN が渡る
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # README が Windows 前提なので、検証も Windows でやる。
+    # public リポジトリなので実行時間の課金は無い。
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: arduino/setup-arduino-cli@81d310742121c928ea9c8bbd407b4217b432ae02 # v2.0.0
+
+      # esp32 コアの取得は 2〜3 分かかる。キャッシュキーには setup_env.ps1 を混ぜて、
+      # 版数を変えたときに古いキャッシュを引かないようにする。
+      - name: Arduino のデータをキャッシュ
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~\AppData\Local\Arduino15
+          key: arduino15-${{ runner.os }}-${{ hashFiles('tools/setup_env.ps1') }}
+          restore-keys: arduino15-${{ runner.os }}-
+
+      # README の「2. 開発環境の準備」。末尾の検査が 1 つでも NG なら非 0 で落ちる。
+      - name: 開発環境の準備 (README 手順 2)
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tools\setup_env.ps1
+
+      # README の「4-A. ワンコマンド」。実機が無いので -BuildOnly で書き込みはしない。
+      - name: ビルド (README 手順 4-A)
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tools\flash.ps1 -BuildOnly
+
+      # 個体が postv3 の人もいるので、そちらの FQBN でもコンパイルが通ることを見る。
+      - name: ビルド (ChipVariant=postv3)
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tools\flash.ps1 -BuildOnly -ChipVariant postv3 -BuildPath build-postv3
+
+      # README の「ホストテスト」。windows-latest には VC ツールが入っている。
+      - name: ホストテスト (442 tests)
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests\run.ps1
+
+      - name: 版を出す
+        if: always()
+        run: |
+          arduino-cli version
+          arduino-cli core list
+          arduino-cli lib list
